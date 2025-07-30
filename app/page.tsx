@@ -417,7 +417,11 @@ export default function CoffeeFlavorWheel() {
           })
         });
 
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
         const result = await response.json();
+        console.log('API Response:', result);
 
         if (result.success) {
           // ローカル状態を更新
@@ -428,12 +432,17 @@ export default function CoffeeFlavorWheel() {
           console.error('API Error:', result.error);
           alert(`送信に失敗しました: ${result.error || '不明なエラー'}`);
         }
-              } catch (error) {
-          console.error('Submit error:', error);
-          alert(`送信中にエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
-        } finally {
-          setIsSubmitting(false);
-        }
+      } catch (error) {
+        console.error('Submit error:', error);
+        console.error('Error details:', {
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : 'No stack trace'
+        });
+        alert(`送信中にエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+      } finally {
+        setIsSubmitting(false);
+      }
       }
   };
 

@@ -34,8 +34,13 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Survey fetch error:', error);
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    });
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch surveys' },
+      { success: false, error: `Failed to fetch surveys: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
@@ -45,6 +50,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('Received request body:', body);
     const { name, age, coffeeName, flavors } = body;
 
     if (!name || !age || !coffeeName || !flavors || !Array.isArray(flavors)) {
@@ -89,8 +95,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Survey save error:', error);
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    });
     return NextResponse.json(
-      { success: false, error: 'Failed to save survey' },
+      { success: false, error: `Failed to save survey: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }

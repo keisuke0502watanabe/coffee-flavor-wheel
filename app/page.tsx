@@ -137,9 +137,13 @@ export default function CoffeeFlavorWheel() {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    const width = 1000;
-    const height = 1000;
-    const radius = Math.min(width, height) / 2 - 30;
+    // 画面サイズに応じてSVGサイズを調整
+    const containerWidth = svgRef.current?.parentElement?.clientWidth || 600;
+    const containerHeight = window.innerHeight * 0.6; // 画面の60%の高さ
+    const size = Math.min(containerWidth, containerHeight, 800); // 最大800px
+    const width = size;
+    const height = size;
+    const radius = Math.min(width, height) / 2 - 20;
 
     const g = svg
       .attr("width", width)
@@ -462,8 +466,8 @@ export default function CoffeeFlavorWheel() {
 
         {/* サンバースト図 */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white rounded-xl shadow-2xl p-8">
-            <svg ref={svgRef}></svg>
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 w-full max-w-4xl overflow-hidden">
+            <svg ref={svgRef} className="w-full h-auto max-w-full"></svg>
           </div>
         </div>
 

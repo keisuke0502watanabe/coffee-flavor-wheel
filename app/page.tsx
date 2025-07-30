@@ -32,7 +32,7 @@ interface HierarchyNode {
   children?: HierarchyNode[];
 }
 
-type D3HierarchyNode = any;
+type D3HierarchyNode = d3.HierarchyRectangularNode<HierarchyNode>;
 
 export default function CoffeeFlavorWheel() {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -184,7 +184,7 @@ export default function CoffeeFlavorWheel() {
         '#f59e0b'  // NUTS - amber
       ]);
 
-    const arc = d3.arc<D3HierarchyNode>()
+    const arc = d3.arc<d3.HierarchyRectangularNode<HierarchyNode>>()
       .startAngle(d => d.x0)
       .endAngle(d => d.x1)
       .innerRadius(d => d.y0)

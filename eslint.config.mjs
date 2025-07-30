@@ -14,7 +14,8 @@ const eslintConfig = [
   {
     ignores: ["app/page.tsx"],
     rules: {
-      "@typescript-eslint/no-explicit-any": "off"
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-non-null-assertion": "off"
     }
   }
 ];

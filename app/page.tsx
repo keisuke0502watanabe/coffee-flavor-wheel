@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, X, RotateCcw, Download } from 'lucide-react';
+import { Check, X, RotateCcw, Download, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import * as d3 from 'd3';
 
 // 型定義
@@ -40,6 +40,7 @@ export default function CoffeeFlavorWheel() {
   const [flavorData, setFlavorData] = useState<FlavorData>({});
   const [selectedFlavors, setSelectedFlavors] = useState<string[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]); // カテゴリ、サブカテゴリ、フレーバー全て
+  const [circleScale, setCircleScale] = useState<number>(1); // 円のスケール（1が標準サイズ）
   const [participantName, setParticipantName] = useState<string>('');
   const [participantAge, setParticipantAge] = useState<string>('');
   const [coffeeName, setCoffeeName] = useState<string>('');
@@ -178,6 +179,9 @@ export default function CoffeeFlavorWheel() {
     // サイズを決定（最小サイズを下回らないようにする）
     let size = Math.min(availableWidth, availableHeight, maxSize);
     size = Math.max(size, minSize); // 最小サイズを保証
+    
+    // スケールを適用
+    size = size * circleScale;
     
     const width = size;
     const height = size;
@@ -426,7 +430,7 @@ export default function CoffeeFlavorWheel() {
       .style("fill", "#6b7280")
       .text("FLAVORS");
 
-  }, [flavorData, selectedFlavors, selectedItems]);
+  }, [flavorData, selectedFlavors, selectedItems, circleScale]);
 
   const toggleFlavor = (category: string, subcategory: string, flavor: string) => {
     const flavorId = `${category}-${subcategory}-${flavor}`;
@@ -471,6 +475,16 @@ export default function CoffeeFlavorWheel() {
         return [...prev, itemId];
       }
     });
+  };
+
+  const removeSelectedItem = (itemId: string) => {
+    if (itemId.includes('-') && !itemId.startsWith('category-') && !itemId.startsWith('subcategory-')) {
+      // フレーバーの場合
+      setSelectedFlavors(prev => prev.filter(id => id !== itemId));
+    } else {
+      // カテゴリ・サブカテゴリの場合
+      setSelectedItems(prev => prev.filter(id => id !== itemId));
+    }
   };
 
   const clearSelections = () => {
@@ -609,23 +623,85 @@ export default function CoffeeFlavorWheel() {
 
         {/* サンバースト図 */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 w-full max-w-6xl overflow-hidden">
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 w-full max-w-6xl overflow-hidden relative">
+            {/* リサイズボタン */}
+            <div className="absolute top-4 right-4 flex gap-2 z-10">
+              <button
+                onClick={() => setCircleScale(prev => Math.max(0.5, prev - 0.1))}
+                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                title="縮小"
+              >
+                <ZoomOut size={16} />
+              </button>
+              <button
+                onClick={() => setCircleScale(1)}
+                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                title="標準サイズ"
+              >
+                <RotateCw size={16} />
+              </button>
+              <button
+                onClick={() => setCircleScale(prev => Math.min(2, prev + 0.1))}
+                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                title="拡大"
+              >
+                <ZoomIn size={16} />
+              </button>
+            </div>
             <svg ref={svgRef} className="w-full h-auto max-w-full"></svg>
           </div>
         </div>
 
-        {/* 選択したフレーバーの表示 */}
-        {selectedFlavors.length > 0 && (
+        {/* 選択したアイテムの表示 */}
+        {(selectedFlavors.length > 0 || selectedItems.length > 0) && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h3 className="text-xl font-bold mb-4 text-center">選択したフレーバー</h3>
+            <h3 className="text-xl font-bold mb-4 text-center">選択したアイテム</h3>
+            <p className="text-sm text-gray-500 text-center mb-4">タップして削除できます</p>
             <div className="flex flex-wrap gap-2 justify-center">
+              {/* フレーバー */}
               {selectedFlavors.map(id => {
                 const [category, , flavor] = id.split('-');
                 return (
-                  <div key={id} className="bg-amber-100 border border-amber-300 px-3 py-2 rounded-full text-sm">
+                  <button
+                    key={id}
+                    onClick={() => removeSelectedItem(id)}
+                    className="bg-amber-100 border border-amber-300 px-3 py-2 rounded-full text-sm hover:bg-amber-200 transition-colors cursor-pointer flex items-center gap-1"
+                  >
                     <span className="font-medium text-amber-800">{flavor}</span>
-                    <span className="text-amber-600 text-xs ml-1">({category})</span>
-                  </div>
+                    <span className="text-amber-600 text-xs">({category})</span>
+                    <X size={12} className="text-amber-600" />
+                  </button>
+                );
+              })}
+              {/* カテゴリ・サブカテゴリ */}
+              {selectedItems.map(id => {
+                let displayName = '';
+                let bgColor = '';
+                let borderColor = '';
+                let textColor = '';
+                
+                if (id.startsWith('category-')) {
+                  displayName = id.replace('category-', '');
+                  bgColor = 'bg-blue-100';
+                  borderColor = 'border-blue-300';
+                  textColor = 'text-blue-800';
+                } else if (id.startsWith('subcategory-')) {
+                  const [, category, subcategory] = id.split('-');
+                  displayName = `${subcategory} (${category})`;
+                  bgColor = 'bg-green-100';
+                  borderColor = 'border-green-300';
+                  textColor = 'text-green-800';
+                }
+                
+                return (
+                  <button
+                    key={id}
+                    onClick={() => removeSelectedItem(id)}
+                    className={`${bgColor} border ${borderColor} px-3 py-2 rounded-full text-sm hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-1`}
+                  >
+                    <span className={`font-medium ${textColor}`}>{displayName}</span>
+                    <X size={12} className={textColor} />
+                  </button>
                 );
               })}
             </div>

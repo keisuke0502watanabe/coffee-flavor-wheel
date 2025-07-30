@@ -2,6 +2,9 @@
 import { kv } from '@vercel/kv';
 import { NextRequest, NextResponse } from 'next/server';
 
+// ローカル開発用のフォールバック（Vercel KVが利用できない場合）
+const isLocalDevelopment = process.env.NODE_ENV === 'development' && (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN);
+
 export interface SurveySubmission {
   id: number;
   name: string;
@@ -19,6 +22,15 @@ export interface SurveySubmission {
 // GET: アンケート結果を取得
 export async function GET() {
   try {
+    if (isLocalDevelopment) {
+      // ローカル開発時は空の配列を返す
+      return NextResponse.json({
+        success: true,
+        data: [],
+        count: 0
+      });
+    }
+
     // KVから全ての回答を取得（最新100件）
     const submissions = await kv.lrange('coffee-surveys', 0, 99);
     
@@ -81,6 +93,16 @@ export async function POST(request: NextRequest) {
       }),
       rawTimestamp: new Date().toISOString()
     };
+
+    if (isLocalDevelopment) {
+      // ローカル開発時は成功レスポンスを返す（実際には保存しない）
+      console.log('Local development: Survey would be saved:', submission);
+      return NextResponse.json({
+        success: true,
+        data: submission,
+        message: 'Survey saved successfully (local development mode)'
+      });
+    }
 
     // KVに保存（リストの先頭に追加）
     await kv.lpush('coffee-surveys', JSON.stringify(submission));

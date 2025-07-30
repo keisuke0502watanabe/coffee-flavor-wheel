@@ -43,6 +43,7 @@ export default function CoffeeFlavorWheel() {
   const [showSubmitForm, setShowSubmitForm] = useState<boolean>(false);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // 既存のアンケート結果を読み込み
   useEffect(() => {
@@ -372,6 +373,7 @@ export default function CoffeeFlavorWheel() {
         return;
       }
 
+      setIsSubmitting(true);
       try {
         const flavorsData = selectedFlavors.map(id => {
           const [category, subcategory, flavor] = id.split('-');
@@ -399,13 +401,16 @@ export default function CoffeeFlavorWheel() {
           clearSelections();
           alert('アンケートを送信しました！ありがとうございます。');
         } else {
-          alert('送信に失敗しました。もう一度お試しください。');
+          console.error('API Error:', result.error);
+          alert(`送信に失敗しました: ${result.error || '不明なエラー'}`);
         }
-      } catch (error) {
-        console.error('Submit error:', error);
-        alert('送信中にエラーが発生しました。');
+              } catch (error) {
+          console.error('Submit error:', error);
+          alert(`送信中にエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+        } finally {
+          setIsSubmitting(false);
+        }
       }
-    }
   };
 
   const downloadResults = () => {
@@ -526,10 +531,17 @@ export default function CoffeeFlavorWheel() {
               <div className="flex gap-2">
                 <button
                   onClick={submitSurvey}
-                  disabled={!participantName.trim() || !participantAge.trim() || selectedFlavors.length === 0}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  disabled={!participantName.trim() || !participantAge.trim() || selectedFlavors.length === 0 || isSubmitting}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
-                  送信
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      送信中...
+                    </>
+                  ) : (
+                    '送信'
+                  )}
                 </button>
                 <button
                   onClick={() => setShowSubmitForm(false)}

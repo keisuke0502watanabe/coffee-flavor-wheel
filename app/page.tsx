@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -32,7 +33,6 @@ interface HierarchyNode {
   children?: HierarchyNode[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type D3HierarchyNode = any;
 
 export default function CoffeeFlavorWheel() {
@@ -495,7 +495,6 @@ export default function CoffeeFlavorWheel() {
                 <p className="text-sm text-gray-600 mb-2">選択したフレーバー: {selectedFlavors.length}個</p>
                 <div className="max-h-32 overflow-y-auto bg-gray-50 p-2 rounded text-xs">
                   {selectedFlavors.map(id => {
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     const [category, subcategory, flavor] = id.split('-');
                     return (
                       <div key={id} className="mb-1">

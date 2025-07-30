@@ -6,6 +6,7 @@ export interface SurveySubmission {
   id: number;
   name: string;
   age: number;
+  coffeeName: string;
   flavors: Array<{
     category: string;
     subcategory: string;
@@ -44,11 +45,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, age, flavors } = body;
+    const { name, age, coffeeName, flavors } = body;
 
-    if (!name || !age || !flavors || !Array.isArray(flavors)) {
+    if (!name || !age || !coffeeName || !flavors || !Array.isArray(flavors)) {
       return NextResponse.json(
-        { success: false, error: 'Invalid data format. Name, age, and flavors are required.' },
+        { success: false, error: 'Invalid data format. Name, age, coffee name, and flavors are required.' },
         { status: 400 }
       );
     }
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
       id: Date.now(),
       name: name.trim(),
       age: parsedAge,
+      coffeeName: coffeeName.trim(),
       flavors,
       timestamp: new Date().toLocaleString('ja-JP', {
         timeZone: 'Asia/Tokyo'

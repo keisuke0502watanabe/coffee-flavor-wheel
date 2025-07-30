@@ -15,6 +15,7 @@ interface Submission {
   id: number;
   name: string;
   age: number;
+  coffeeName: string;
   flavors: FlavorItem[];
   timestamp: string;
   rawTimestamp: string;
@@ -40,6 +41,7 @@ export default function CoffeeFlavorWheel() {
   const [selectedFlavors, setSelectedFlavors] = useState<string[]>([]);
   const [participantName, setParticipantName] = useState<string>('');
   const [participantAge, setParticipantAge] = useState<string>('');
+  const [coffeeName, setCoffeeName] = useState<string>('');
   const [showSubmitForm, setShowSubmitForm] = useState<boolean>(false);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -362,11 +364,12 @@ export default function CoffeeFlavorWheel() {
     setSelectedFlavors([]);
     setParticipantName('');
     setParticipantAge('');
+    setCoffeeName('');
     setShowSubmitForm(false);
   };
 
   const submitSurvey = async () => {
-    if (participantName.trim() && participantAge.trim() && selectedFlavors.length > 0) {
+    if (participantName.trim() && participantAge.trim() && coffeeName.trim() && selectedFlavors.length > 0) {
       const age = parseInt(participantAge);
       if (isNaN(age) || age < 1 || age > 120) {
         alert('正しい年齢を入力してください（1-120歳）');
@@ -389,6 +392,7 @@ export default function CoffeeFlavorWheel() {
           body: JSON.stringify({
             name: participantName.trim(),
             age: age,
+            coffeeName: coffeeName.trim(),
             flavors: flavorsData
           })
         });
@@ -415,9 +419,9 @@ export default function CoffeeFlavorWheel() {
 
   const downloadResults = () => {
     const csvContent = [
-      'ID,名前,年齢,タイムスタンプ,選択したフレーバー数,フレーバー詳細',
+      'ID,名前,年齢,コーヒー名,タイムスタンプ,選択したフレーバー数,フレーバー詳細',
       ...submissions.map(sub => 
-        `${sub.id},"${sub.name}",${sub.age},"${sub.timestamp}",${sub.flavors.length},"${sub.flavors.map(f => `${f.category}&gt;${f.subcategory}&gt;${f.flavor}`).join('; ')}"`
+        `${sub.id},"${sub.name}",${sub.age},"${sub.coffeeName || ''}","${sub.timestamp}",${sub.flavors.length},"${sub.flavors.map(f => `${f.category}&gt;${f.subcategory}&gt;${f.flavor}`).join('; ')}"`
       )
     ].join('\n');
     
@@ -517,7 +521,14 @@ export default function CoffeeFlavorWheel() {
                 placeholder="お名前を入力してください"
                 value={participantName}
                 onChange={(e) => setParticipantName(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-900 placeholder-gray-500"
+              />
+              <input
+                type="text"
+                placeholder="コーヒーの名前を入力してください（例：ブルーマウンテン、キリマンジャロなど）"
+                value={coffeeName}
+                onChange={(e) => setCoffeeName(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-900 placeholder-gray-500"
               />
               <input
                 type="number"
@@ -526,12 +537,12 @@ export default function CoffeeFlavorWheel() {
                 onChange={(e) => setParticipantAge(e.target.value)}
                 min="1"
                 max="120"
-                className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-900 placeholder-gray-500"
               />
               <div className="flex gap-2">
                 <button
                   onClick={submitSurvey}
-                  disabled={!participantName.trim() || !participantAge.trim() || selectedFlavors.length === 0 || isSubmitting}
+                  disabled={!participantName.trim() || !participantAge.trim() || !coffeeName.trim() || selectedFlavors.length === 0 || isSubmitting}
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
@@ -574,6 +585,7 @@ export default function CoffeeFlavorWheel() {
                   <tr className="border-b">
                     <th className="text-left p-2">名前</th>
                     <th className="text-left p-2">年齢</th>
+                    <th className="text-left p-2">コーヒー名</th>
                     <th className="text-left p-2">時間</th>
                     <th className="text-left p-2">フレーバー数</th>
                     <th className="text-left p-2">選択したフレーバー</th>
@@ -584,6 +596,7 @@ export default function CoffeeFlavorWheel() {
                     <tr key={submission.id} className="border-b hover:bg-gray-50">
                       <td className="p-2 font-medium">{submission.name}</td>
                       <td className="p-2">{submission.age}歳</td>
+                      <td className="p-2 font-medium text-amber-700">{submission.coffeeName || '未入力'}</td>
                       <td className="p-2 text-gray-600">{submission.timestamp}</td>
                       <td className="p-2">{submission.flavors.length}個</td>
                       <td className="p-2">

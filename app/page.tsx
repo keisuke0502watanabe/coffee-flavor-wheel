@@ -33,6 +33,7 @@ interface HierarchyNode {
   children?: HierarchyNode[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type D3HierarchyNode = any;
 
 export default function CoffeeFlavorWheel() {
@@ -185,7 +186,7 @@ export default function CoffeeFlavorWheel() {
         '#f59e0b'  // NUTS - amber
       ]);
 
-    const arc = d3.arc<d3.HierarchyRectangularNode<HierarchyNode>>()
+    const arc = d3.arc<D3HierarchyNode>()
       .startAngle(d => d.x0)
       .endAngle(d => d.x1)
       .innerRadius(d => d.y0)

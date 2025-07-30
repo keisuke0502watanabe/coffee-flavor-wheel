@@ -279,15 +279,15 @@ export default function CoffeeFlavorWheel() {
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
       .style("font-size", (d: D3HierarchyNode) => {
-        // 円のサイズに応じてフォントサイズを調整
-        const baseSize = Math.max(8, Math.min(20, radius / 15)); // 最小8px、最大20px
+        // 円のサイズに応じてフォントサイズを調整（より小さく）
+        const baseSize = Math.max(6, Math.min(16, radius / 20)); // 最小6px、最大16px
         
         if (d.depth === 1) {
-          return Math.max(10, Math.min(18, baseSize * 1.3)) + "px";  // カテゴリ
+          return Math.max(8, Math.min(14, baseSize * 1.2)) + "px";   // カテゴリ
         } else if (d.depth === 2) {
-          return Math.max(9, Math.min(16, baseSize * 1.1)) + "px";   // サブカテゴリ
+          return Math.max(7, Math.min(12, baseSize * 1.0)) + "px";   // サブカテゴリ
         } else {
-          return Math.max(8, Math.min(14, baseSize)) + "px";          // フレーバー
+          return Math.max(6, Math.min(10, baseSize * 0.9)) + "px";   // フレーバー
         }
       })
       .style("font-weight", (d: D3HierarchyNode) => d.depth === 1 ? "bold" : "600")
@@ -346,9 +346,9 @@ export default function CoffeeFlavorWheel() {
           : name;
       });
 
-    // 中央にタイトル
-    const titleSize = Math.max(12, Math.min(18, radius / 20));
-    const subtitleSize = Math.max(10, Math.min(14, radius / 25));
+    // 中央にタイトル（より小さく）
+    const titleSize = Math.max(10, Math.min(14, radius / 25));
+    const subtitleSize = Math.max(8, Math.min(12, radius / 30));
     
     g.append("text")
       .attr("text-anchor", "middle")

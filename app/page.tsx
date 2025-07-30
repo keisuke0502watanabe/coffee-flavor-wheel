@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -33,7 +32,6 @@ interface HierarchyNode {
   children?: HierarchyNode[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type D3HierarchyNode = any;
 
 export default function CoffeeFlavorWheel() {

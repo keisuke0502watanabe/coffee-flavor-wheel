@@ -14,6 +14,7 @@ interface FlavorItem {
 interface Submission {
   id: number;
   name: string;
+  age: number;
   flavors: FlavorItem[];
   timestamp: string;
   rawTimestamp: string;
@@ -36,6 +37,7 @@ export default function CoffeeFlavorWheel() {
   const [flavorData, setFlavorData] = useState<FlavorData>({});
   const [selectedFlavors, setSelectedFlavors] = useState<string[]>([]);
   const [participantName, setParticipantName] = useState<string>('');
+  const [participantAge, setParticipantAge] = useState<string>('');
   const [showSubmitForm, setShowSubmitForm] = useState<boolean>(false);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -133,9 +135,9 @@ export default function CoffeeFlavorWheel() {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    const width = 600;
-    const height = 600;
-    const radius = Math.min(width, height) / 2 - 10;
+    const width = 800;
+    const height = 800;
+    const radius = Math.min(width, height) / 2 - 20;
 
     const g = svg
       .attr("width", width)
@@ -243,9 +245,9 @@ export default function CoffeeFlavorWheel() {
         }
       });
 
-    // ラベルを追加
+    // ラベルを追加（全階層対応）
     g.selectAll("text")
-      .data(root.descendants().filter(d => d.depth > 0 && d.depth < 3))
+      .data(root.descendants().filter(d => d.depth > 0))
       .enter()
       .append("text")
       .attr("transform", (d: any) => {
@@ -254,17 +256,49 @@ export default function CoffeeFlavorWheel() {
         const x = Math.cos(angle - Math.PI / 2) * radius;
         const y = Math.sin(angle - Math.PI / 2) * radius;
         const rotation = angle * 180 / Math.PI - 90;
-        return `translate(${x},${y}) rotate(${rotation > 90 ? rotation + 180 : rotation})`;
+        // テキストの回転を調整して読みやすくする
+        const adjustedRotation = rotation > 90 && rotation < 270 ? rotation + 180 : rotation;
+        return `translate(${x},${y}) rotate(${adjustedRotation})`;
       })
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
-      .style("font-size", (d: any) => d.depth === 1 ? "12px" : "10px")
-      .style("font-weight", (d: any) => d.depth === 1 ? "bold" : "normal")
-      .style("fill", "#fff")
-      .style("text-shadow", "1px 1px 2px rgba(0,0,0,0.7)")
+      .style("font-size", (d: any) => {
+        if (d.depth === 1) return "16px";        // カテゴリ（大きく）
+        if (d.depth === 2) return "14px";        // サブカテゴリ（中程度）  
+        return "12px";                           // フレーバー（読みやすく）
+      })
+      .style("font-weight", (d: any) => d.depth === 1 ? "bold" : "600")
+      .style("fill", (d: any) => {
+        if (d.depth === 1) return "#ffffff";     // カテゴリ：白
+        if (d.depth === 2) return "#ffffff";     // サブカテゴリ：白
+        return "#1f2937";                        // フレーバー：濃いグレー
+      })
+      .style("text-shadow", (d: any) => {
+        if (d.depth === 1) return "3px 3px 6px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,0.8)";  // カテゴリ：二重影
+        if (d.depth === 2) return "2px 2px 4px rgba(0,0,0,0.8), 1px 1px 2px rgba(0,0,0,0.7)";  // サブカテゴリ：二重影
+        return "2px 2px 4px rgba(255,255,255,0.9), 1px 1px 2px rgba(255,255,255,0.8)";          // フレーバー：二重白影
+      })
       .style("pointer-events", "none")
+      .style("opacity", (d: any) => {
+        // 角度の幅が小さすぎる場合はテキストを非表示
+        const angleWidth = d.x1 - d.x0;
+        if (d.depth === 1 && angleWidth < 0.3) return 0;   // カテゴリが狭すぎる場合
+        if (d.depth === 2 && angleWidth < 0.1) return 0;   // サブカテゴリが狭すぎる場合  
+        if (d.depth === 3 && angleWidth < 0.05) return 0;  // フレーバーが狭すぎる場合
+        return 1;
+      })
       .text((d: any) => {
-        const maxLength = d.depth === 1 ? 8 : 6;
+        const angleWidth = d.x1 - d.x0;
+        let maxLength;
+        
+        if (d.depth === 1) {
+          maxLength = angleWidth > 0.5 ? 20 : 15;   // カテゴリ
+        } else if (d.depth === 2) {
+          maxLength = angleWidth > 0.25 ? 15 : 10;   // サブカテゴリ
+        } else {
+          maxLength = angleWidth > 0.1 ? 12 : 8;   // フレーバー
+        }
+        
         return d.data.name.length > maxLength 
           ? d.data.name.substring(0, maxLength) + "..."
           : d.data.name;
@@ -304,11 +338,18 @@ export default function CoffeeFlavorWheel() {
   const clearSelections = () => {
     setSelectedFlavors([]);
     setParticipantName('');
+    setParticipantAge('');
     setShowSubmitForm(false);
   };
 
   const submitSurvey = async () => {
-    if (participantName.trim() && selectedFlavors.length > 0) {
+    if (participantName.trim() && participantAge.trim() && selectedFlavors.length > 0) {
+      const age = parseInt(participantAge);
+      if (isNaN(age) || age < 1 || age > 120) {
+        alert('正しい年齢を入力してください（1-120歳）');
+        return;
+      }
+
       try {
         const flavorsData = selectedFlavors.map(id => {
           const [category, subcategory, flavor] = id.split('-');
@@ -323,6 +364,7 @@ export default function CoffeeFlavorWheel() {
           },
           body: JSON.stringify({
             name: participantName.trim(),
+            age: age,
             flavors: flavorsData
           })
         });
@@ -346,9 +388,9 @@ export default function CoffeeFlavorWheel() {
 
   const downloadResults = () => {
     const csvContent = [
-      'ID,名前,タイムスタンプ,選択したフレーバー数,フレーバー詳細',
+      'ID,名前,年齢,タイムスタンプ,選択したフレーバー数,フレーバー詳細',
       ...submissions.map(sub => 
-        `${sub.id},"${sub.name}","${sub.timestamp}",${sub.flavors.length},"${sub.flavors.map(f => `${f.category}&gt;${f.subcategory}&gt;${f.flavor}`).join('; ')}"`
+        `${sub.id},"${sub.name}",${sub.age},"${sub.timestamp}",${sub.flavors.length},"${sub.flavors.map(f => `${f.category}&gt;${f.subcategory}&gt;${f.flavor}`).join('; ')}"`
       )
     ].join('\n');
     
@@ -448,12 +490,21 @@ export default function CoffeeFlavorWheel() {
                 placeholder="お名前を入力してください"
                 value={participantName}
                 onChange={(e) => setParticipantName(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+              <input
+                type="number"
+                placeholder="年齢を入力してください"
+                value={participantAge}
+                onChange={(e) => setParticipantAge(e.target.value)}
+                min="1"
+                max="120"
                 className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
               <div className="flex gap-2">
                 <button
                   onClick={submitSurvey}
-                  disabled={!participantName.trim() || selectedFlavors.length === 0}
+                  disabled={!participantName.trim() || !participantAge.trim() || selectedFlavors.length === 0}
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
                   送信
@@ -488,6 +539,7 @@ export default function CoffeeFlavorWheel() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2">名前</th>
+                    <th className="text-left p-2">年齢</th>
                     <th className="text-left p-2">時間</th>
                     <th className="text-left p-2">フレーバー数</th>
                     <th className="text-left p-2">選択したフレーバー</th>
@@ -497,6 +549,7 @@ export default function CoffeeFlavorWheel() {
                   {submissions.slice(-10).reverse().map(submission => (
                     <tr key={submission.id} className="border-b hover:bg-gray-50">
                       <td className="p-2 font-medium">{submission.name}</td>
+                      <td className="p-2">{submission.age}歳</td>
                       <td className="p-2 text-gray-600">{submission.timestamp}</td>
                       <td className="p-2">{submission.flavors.length}個</td>
                       <td className="p-2">

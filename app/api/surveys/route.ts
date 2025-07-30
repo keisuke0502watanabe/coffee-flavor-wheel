@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export interface SurveySubmission {
   id: number;
   name: string;
+  age: number;
   flavors: Array<{
     category: string;
     subcategory: string;
@@ -43,11 +44,20 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, flavors } = body;
+    const { name, age, flavors } = body;
 
-    if (!name || !flavors || !Array.isArray(flavors)) {
+    if (!name || !age || !flavors || !Array.isArray(flavors)) {
       return NextResponse.json(
-        { success: false, error: 'Invalid data format' },
+        { success: false, error: 'Invalid data format. Name, age, and flavors are required.' },
+        { status: 400 }
+      );
+    }
+
+    // 年齢のバリデーション
+    const parsedAge = parseInt(age);
+    if (isNaN(parsedAge) || parsedAge < 1 || parsedAge > 120) {
+      return NextResponse.json(
+        { success: false, error: 'Age must be between 1 and 120' },
         { status: 400 }
       );
     }
@@ -56,6 +66,7 @@ export async function POST(request: NextRequest) {
     const submission: SurveySubmission = {
       id: Date.now(),
       name: name.trim(),
+      age: parsedAge,
       flavors,
       timestamp: new Date().toLocaleString('ja-JP', {
         timeZone: 'Asia/Tokyo'

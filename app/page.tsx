@@ -142,8 +142,15 @@ export default function CoffeeFlavorWheel() {
 
     // 画面サイズに応じてSVGサイズを調整
     const containerWidth = svgRef.current?.parentElement?.clientWidth || 600;
-    const containerHeight = window.innerHeight * 0.6; // 画面の60%の高さ
-    const size = Math.min(containerWidth, containerHeight, 800); // 最大800px
+    const containerHeight = window.innerHeight;
+    
+    // PCブラウザではより大きな円を表示
+    const isMobile = window.innerWidth < 768;
+    const heightRatio = isMobile ? 0.6 : 0.8; // モバイル: 60%, PC: 80%
+    const maxSize = isMobile ? 800 : 1200; // モバイル: 800px, PC: 1200px
+    
+    const availableHeight = containerHeight * heightRatio;
+    const size = Math.min(containerWidth, availableHeight, maxSize);
     const width = size;
     const height = size;
     const radius = Math.min(width, height) / 2 - 20;
@@ -458,7 +465,7 @@ export default function CoffeeFlavorWheel() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 p-4">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* ヘッダー */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-amber-900 mb-2">☕ コーヒーフレーバーホイール</h1>
@@ -488,7 +495,7 @@ export default function CoffeeFlavorWheel() {
 
         {/* サンバースト図 */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 w-full max-w-4xl overflow-hidden">
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 w-full max-w-6xl overflow-hidden">
             <svg ref={svgRef} className="w-full h-auto max-w-full"></svg>
           </div>
         </div>

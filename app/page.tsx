@@ -32,6 +32,9 @@ interface HierarchyNode {
   children?: HierarchyNode[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type D3HierarchyNode = any;
+
 export default function CoffeeFlavorWheel() {
   const svgRef = useRef<SVGSVGElement>(null);
   const [flavorData, setFlavorData] = useState<FlavorData>({});
@@ -135,9 +138,9 @@ export default function CoffeeFlavorWheel() {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    const width = 800;
-    const height = 800;
-    const radius = Math.min(width, height) / 2 - 20;
+    const width = 1000;
+    const height = 1000;
+    const radius = Math.min(width, height) / 2 - 30;
 
     const g = svg
       .attr("width", width)
@@ -262,46 +265,62 @@ export default function CoffeeFlavorWheel() {
       })
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
-      .style("font-size", (d: any) => {
-        if (d.depth === 1) return "16px";        // カテゴリ（大きく）
-        if (d.depth === 2) return "14px";        // サブカテゴリ（中程度）  
-        return "12px";                           // フレーバー（読みやすく）
+      .style("font-size", (d: D3HierarchyNode) => {
+        if (d.depth === 1) return "18px";        // カテゴリ（大きく）
+        if (d.depth === 2) return "16px";        // サブカテゴリ（中程度）  
+        return "14px";                           // フレーバー（読みやすく）
       })
-      .style("font-weight", (d: any) => d.depth === 1 ? "bold" : "600")
-      .style("fill", (d: any) => {
+      .style("font-weight", (d: D3HierarchyNode) => d.depth === 1 ? "bold" : "600")
+      .style("fill", (d: D3HierarchyNode) => {
         if (d.depth === 1) return "#ffffff";     // カテゴリ：白
         if (d.depth === 2) return "#ffffff";     // サブカテゴリ：白
         return "#1f2937";                        // フレーバー：濃いグレー
       })
-      .style("text-shadow", (d: any) => {
+      .style("text-shadow", (d: D3HierarchyNode) => {
         if (d.depth === 1) return "3px 3px 6px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,0.8)";  // カテゴリ：二重影
         if (d.depth === 2) return "2px 2px 4px rgba(0,0,0,0.8), 1px 1px 2px rgba(0,0,0,0.7)";  // サブカテゴリ：二重影
         return "2px 2px 4px rgba(255,255,255,0.9), 1px 1px 2px rgba(255,255,255,0.8)";          // フレーバー：二重白影
       })
       .style("pointer-events", "none")
-      .style("opacity", (d: any) => {
+      .style("opacity", (d: D3HierarchyNode) => {
         // 角度の幅が小さすぎる場合はテキストを非表示
         const angleWidth = d.x1 - d.x0;
-        if (d.depth === 1 && angleWidth < 0.3) return 0;   // カテゴリが狭すぎる場合
-        if (d.depth === 2 && angleWidth < 0.1) return 0;   // サブカテゴリが狭すぎる場合  
-        if (d.depth === 3 && angleWidth < 0.05) return 0;  // フレーバーが狭すぎる場合
+        if (d.depth === 1 && angleWidth < 0.2) return 0;   // カテゴリが狭すぎる場合
+        if (d.depth === 2 && angleWidth < 0.08) return 0;  // サブカテゴリが狭すぎる場合  
+        if (d.depth === 3 && angleWidth < 0.03) return 0;  // フレーバーが狭すぎる場合
         return 1;
       })
-      .text((d: any) => {
+      .text((d: D3HierarchyNode) => {
         const angleWidth = d.x1 - d.x0;
         let maxLength;
         
         if (d.depth === 1) {
-          maxLength = angleWidth > 0.5 ? 20 : 15;   // カテゴリ
+          maxLength = angleWidth > 0.4 ? 30 : 20;   // カテゴリ
         } else if (d.depth === 2) {
-          maxLength = angleWidth > 0.25 ? 15 : 10;   // サブカテゴリ
+          maxLength = angleWidth > 0.2 ? 25 : 15;   // サブカテゴリ
         } else {
-          maxLength = angleWidth > 0.1 ? 12 : 8;   // フレーバー
+          maxLength = angleWidth > 0.08 ? 20 : 12;   // フレーバー
         }
         
-        return d.data.name.length > maxLength 
-          ? d.data.name.substring(0, maxLength) + "..."
-          : d.data.name;
+        // 日本語の場合は文字数ではなく、実際の表示幅を考慮
+        const name = d.data.name;
+        if (name.length <= maxLength) {
+          return name;
+        }
+        
+        // 日本語の長い単語の場合は、より多くの文字を表示
+        const japaneseRatio = (name.match(/[あ-んア-ン]/g) || []).length / name.length;
+        if (japaneseRatio > 0.5) {
+          // 日本語が多い場合は、より多くの文字を表示
+          const adjustedMaxLength = Math.floor(maxLength * 1.5);
+          return name.length > adjustedMaxLength 
+            ? name.substring(0, adjustedMaxLength) + "..."
+            : name;
+        }
+        
+        return name.length > maxLength 
+          ? name.substring(0, maxLength) + "..."
+          : name;
       });
 
     // 中央にタイトル
@@ -455,7 +474,7 @@ export default function CoffeeFlavorWheel() {
             <h3 className="text-xl font-bold mb-4 text-center">選択したフレーバー</h3>
             <div className="flex flex-wrap gap-2 justify-center">
               {selectedFlavors.map(id => {
-                const [category, subcategory, flavor] = id.split('-');
+                const [category, , flavor] = id.split('-');
                 return (
                   <div key={id} className="bg-amber-100 border border-amber-300 px-3 py-2 rounded-full text-sm">
                     <span className="font-medium text-amber-800">{flavor}</span>
@@ -476,6 +495,7 @@ export default function CoffeeFlavorWheel() {
                 <p className="text-sm text-gray-600 mb-2">選択したフレーバー: {selectedFlavors.length}個</p>
                 <div className="max-h-32 overflow-y-auto bg-gray-50 p-2 rounded text-xs">
                   {selectedFlavors.map(id => {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     const [category, subcategory, flavor] = id.split('-');
                     return (
                       <div key={id} className="mb-1">

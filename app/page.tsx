@@ -134,6 +134,22 @@ export default function CoffeeFlavorWheel() {
     loadFlavorData();
   }, []);
 
+  // ウィンドウリサイズのハンドリング
+  useEffect(() => {
+    const handleResize = () => {
+      // 少し遅延させて、リサイズが完了してから再描画
+      setTimeout(() => {
+        if (Object.keys(flavorData).length > 0 && svgRef.current) {
+          // 強制的に再描画をトリガー
+          setSelectedFlavors(prev => [...prev]);
+        }
+      }, 100);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [flavorData]);
+
   // サンバースト図を作成
   useEffect(() => {
     if (Object.keys(flavorData).length === 0 || !svgRef.current) return;
@@ -142,19 +158,46 @@ export default function CoffeeFlavorWheel() {
     svg.selectAll("*").remove();
 
     // 画面サイズに応じてSVGサイズを調整
-    const containerWidth = svgRef.current?.parentElement?.clientWidth || 600;
+    const containerElement = svgRef.current?.parentElement;
+    const containerWidth = containerElement?.clientWidth || 600;
     const containerHeight = window.innerHeight;
+    const screenWidth = window.innerWidth;
     
     // PCブラウザではより大きな円を表示
-    const isMobile = window.innerWidth < 768;
-    const heightRatio = isMobile ? 0.6 : 0.8; // モバイル: 60%, PC: 80%
-    const maxSize = isMobile ? 800 : 1200; // モバイル: 800px, PC: 1200px
+    const isMobile = screenWidth < 768;
     
+    // 最小サイズを設定して、拡大時に小さくなりすぎないようにする
+    const minSize = isMobile ? 300 : 400;
+    const maxSize = isMobile ? 800 : 1200;
+    const heightRatio = isMobile ? 0.6 : 0.8;
+    
+    // 利用可能なサイズを計算
     const availableHeight = containerHeight * heightRatio;
-    const size = Math.min(containerWidth, availableHeight, maxSize);
+    const availableWidth = Math.max(containerWidth, minSize); // 最小幅を保証
+    
+    // サイズを決定（最小サイズを下回らないようにする）
+    let size = Math.min(availableWidth, availableHeight, maxSize);
+    size = Math.max(size, minSize); // 最小サイズを保証
+    
     const width = size;
     const height = size;
     const radius = Math.min(width, height) / 2 - 20;
+
+    // デバッグ情報（開発時のみ）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('SVG Size Calculation:', {
+        containerWidth,
+        containerHeight,
+        screenWidth,
+        isMobile,
+        minSize,
+        maxSize,
+        availableHeight,
+        availableWidth,
+        finalSize: size,
+        radius
+      });
+    }
 
     const g = svg
       .attr("width", width)

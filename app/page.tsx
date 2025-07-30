@@ -164,7 +164,7 @@ export default function CoffeeFlavorWheel() {
     };
 
     const root = d3.hierarchy(hierarchyData)
-      .sum((d: any) => d.value || 0)
+      .sum((d: D3HierarchyNode) => d.value || 0)
       .sort((a, b) => (b.value || 0) - (a.value || 0));
 
     const partition = d3.partition<HierarchyNode>()
@@ -197,7 +197,7 @@ export default function CoffeeFlavorWheel() {
       .enter()
       .append("path")
       .attr("d", arc)
-      .style("fill", (d: any) => {
+      .style("fill", (d: D3HierarchyNode) => {
         if (d.depth === 1) {
           return colorScale(d.data.name);
         } else if (d.depth === 2) {
@@ -211,21 +211,21 @@ export default function CoffeeFlavorWheel() {
       .style("stroke", "#fff")
       .style("stroke-width", 2)
       .style("cursor", "pointer")
-      .style("opacity", (d: any) => {
+      .style("opacity", (d: D3HierarchyNode) => {
         if (d.depth === 3) { // 最内層（フレーバー）のみクリック可能
           const flavorId = `${d.parent.parent.data.name}-${d.parent.data.name}-${d.data.name}`;
           return selectedFlavors.includes(flavorId) ? 1 : 0.8;
         }
         return 0.7;
       })
-      .on("mouseover", function(event, d: any) {
+      .on("mouseover", function(event, d: D3HierarchyNode) {
         if (d.depth === 3) {
           d3.select(this)
             .style("opacity", 1)
             .style("stroke-width", 3);
         }
       })
-      .on("mouseout", function(event, d: any) {
+      .on("mouseout", function(event, d: D3HierarchyNode) {
         if (d.depth === 3) {
           const flavorId = `${d.parent.parent.data.name}-${d.parent.data.name}-${d.data.name}`;
           d3.select(this)
@@ -233,7 +233,7 @@ export default function CoffeeFlavorWheel() {
             .style("stroke-width", 2);
         }
       })
-      .on("click", function(event, d: any) {
+      .on("click", function(event, d: D3HierarchyNode) {
         if (d.depth === 3) { // 最内層（フレーバー）のみクリック可能
           const flavorId = `${d.parent.parent.data.name}-${d.parent.data.name}-${d.data.name}`;
           toggleFlavor(d.parent.parent.data.name, d.parent.data.name, d.data.name);
@@ -253,7 +253,7 @@ export default function CoffeeFlavorWheel() {
       .data(root.descendants().filter(d => d.depth > 0))
       .enter()
       .append("text")
-      .attr("transform", (d: any) => {
+      .attr("transform", (d: D3HierarchyNode) => {
         const angle = (d.x0 + d.x1) / 2;
         const radius = (d.y0 + d.y1) / 2;
         const x = Math.cos(angle - Math.PI / 2) * radius;

@@ -39,6 +39,7 @@ export default function CoffeeFlavorWheel() {
   const svgRef = useRef<SVGSVGElement>(null);
   const [flavorData, setFlavorData] = useState<FlavorData>({});
   const [selectedFlavors, setSelectedFlavors] = useState<string[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]); // カテゴリ、サブカテゴリ、フレーバー全て
   const [participantName, setParticipantName] = useState<string>('');
   const [participantAge, setParticipantAge] = useState<string>('');
   const [coffeeName, setCoffeeName] = useState<string>('');
@@ -225,40 +226,56 @@ export default function CoffeeFlavorWheel() {
       .style("stroke-width", 2)
       .style("cursor", "pointer")
       .style("opacity", (d: D3HierarchyNode) => {
-        if (d.depth === 3) { // 最内層（フレーバー）のみクリック可能
-          const flavorId = `${d.parent.parent.data.name}-${d.parent.data.name}-${d.data.name}`;
-          return selectedFlavors.includes(flavorId) ? 1 : 0.8;
+        let itemId: string;
+        let isSelected = false;
+        
+        if (d.depth === 1) {
+          itemId = `category-${d.data.name}`;
+          isSelected = selectedItems.includes(itemId);
+        } else if (d.depth === 2) {
+          itemId = `subcategory-${d.parent.data.name}-${d.data.name}`;
+          isSelected = selectedItems.includes(itemId);
+        } else if (d.depth === 3) {
+          itemId = `${d.parent.parent.data.name}-${d.parent.data.name}-${d.data.name}`;
+          isSelected = selectedFlavors.includes(itemId);
         }
-        return 0.7;
+        
+        return isSelected ? 1 : 0.8;
       })
       .on("mouseover", function(event, d: D3HierarchyNode) {
-        if (d.depth === 3) {
-          d3.select(this)
-            .style("opacity", 1)
-            .style("stroke-width", 3);
-        }
+        d3.select(this)
+          .style("opacity", 1)
+          .style("stroke-width", 3);
       })
       .on("mouseout", function(event, d: D3HierarchyNode) {
-        if (d.depth === 3) {
-          const flavorId = `${d.parent.parent.data.name}-${d.parent.data.name}-${d.data.name}`;
-          d3.select(this)
-            .style("opacity", selectedFlavors.includes(flavorId) ? 1 : 0.8)
-            .style("stroke-width", 2);
+        let itemId: string;
+        let isSelected = false;
+        
+        if (d.depth === 1) {
+          itemId = `category-${d.data.name}`;
+          isSelected = selectedItems.includes(itemId);
+        } else if (d.depth === 2) {
+          itemId = `subcategory-${d.parent.data.name}-${d.data.name}`;
+          isSelected = selectedItems.includes(itemId);
+        } else if (d.depth === 3) {
+          itemId = `${d.parent.parent.data.name}-${d.parent.data.name}-${d.data.name}`;
+          isSelected = selectedFlavors.includes(itemId);
         }
+        
+        d3.select(this)
+          .style("opacity", isSelected ? 1 : 0.8)
+          .style("stroke-width", 2);
       })
       .on("click", function(event, d: D3HierarchyNode) {
-        if (d.depth === 3) { // 最内層（フレーバー）のみクリック可能
-          const flavorId = `${d.parent.parent.data.name}-${d.parent.data.name}-${d.data.name}`;
-          toggleFlavor(d.parent.parent.data.name, d.parent.data.name, d.data.name);
-          
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .style("transform", selectedFlavors.includes(flavorId) ? "scale(0.95)" : "scale(1.05)")
-            .transition()
-            .duration(200)
-            .style("transform", "scale(1)");
-        }
+        toggleItem(d);
+        
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .style("transform", "scale(1.05)")
+          .transition()
+          .duration(200)
+          .style("transform", "scale(1)");
       });
 
     // ラベルを追加（全階層対応）
@@ -366,7 +383,7 @@ export default function CoffeeFlavorWheel() {
       .style("fill", "#6b7280")
       .text("FLAVORS");
 
-  }, [flavorData, selectedFlavors]);
+  }, [flavorData, selectedFlavors, selectedItems]);
 
   const toggleFlavor = (category: string, subcategory: string, flavor: string) => {
     const flavorId = `${category}-${subcategory}-${flavor}`;
@@ -378,10 +395,44 @@ export default function CoffeeFlavorWheel() {
         return [...prev, flavorId];
       }
     });
+    
+    // selectedItemsも更新
+    setSelectedItems(prev => {
+      if (prev.includes(flavorId)) {
+        return prev.filter(id => id !== flavorId);
+      } else {
+        return [...prev, flavorId];
+      }
+    });
+  };
+
+  const toggleItem = (d: D3HierarchyNode) => {
+    let itemId: string;
+    
+    if (d.depth === 1) {
+      // カテゴリ
+      itemId = `category-${d.data.name}`;
+    } else if (d.depth === 2) {
+      // サブカテゴリ
+      itemId = `subcategory-${d.parent.data.name}-${d.data.name}`;
+    } else {
+      // フレーバー（既存の処理）
+      toggleFlavor(d.parent.parent.data.name, d.parent.data.name, d.data.name);
+      return;
+    }
+    
+    setSelectedItems(prev => {
+      if (prev.includes(itemId)) {
+        return prev.filter(id => id !== itemId);
+      } else {
+        return [...prev, itemId];
+      }
+    });
   };
 
   const clearSelections = () => {
     setSelectedFlavors([]);
+    setSelectedItems([]);
     setParticipantName('');
     setParticipantAge('');
     setCoffeeName('');
@@ -389,7 +440,7 @@ export default function CoffeeFlavorWheel() {
   };
 
   const submitSurvey = async () => {
-    if (participantName.trim() && participantAge.trim() && coffeeName.trim() && selectedFlavors.length > 0) {
+    if (participantName.trim() && participantAge.trim() && coffeeName.trim() && (selectedFlavors.length > 0 || selectedItems.length > 0)) {
       const age = parseInt(participantAge);
       if (isNaN(age) || age < 1 || age > 120) {
         alert('正しい年齢を入力してください（1-120歳）');
@@ -403,6 +454,16 @@ export default function CoffeeFlavorWheel() {
           return { category, subcategory, flavor };
         });
 
+        const itemsData = selectedItems.map(id => {
+          if (id.startsWith('category-')) {
+            return { type: 'category', name: id.replace('category-', '') };
+          } else if (id.startsWith('subcategory-')) {
+            const [, category, subcategory] = id.split('-');
+            return { type: 'subcategory', category, name: subcategory };
+          }
+          return null;
+        }).filter(Boolean);
+
         // サーバーに送信
         const response = await fetch('/api/surveys', {
           method: 'POST',
@@ -413,7 +474,8 @@ export default function CoffeeFlavorWheel() {
             name: participantName.trim(),
             age: age,
             coffeeName: coffeeName.trim(),
-            flavors: flavorsData
+            flavors: flavorsData,
+            items: itemsData
           })
         });
 
@@ -479,9 +541,9 @@ export default function CoffeeFlavorWheel() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-amber-900 mb-2">☕ コーヒーフレーバーホイール</h1>
           <p className="text-amber-700 text-lg">外側のフレーバーをクリックして選択してください</p>
-          {selectedFlavors.length > 0 && (
+          {(selectedFlavors.length > 0 || selectedItems.length > 0) && (
             <div className="mt-4 p-3 bg-white rounded-lg shadow-md">
-              <p className="text-sm text-gray-600 mb-2">選択中: {selectedFlavors.length}個のフレーバー</p>
+              <p className="text-sm text-gray-600 mb-2">選択中: {selectedFlavors.length + selectedItems.length}個のアイテム</p>
               <div className="flex gap-2 justify-center">
                 <button
                   onClick={() => setShowSubmitForm(true)}
@@ -571,7 +633,7 @@ export default function CoffeeFlavorWheel() {
               <div className="flex gap-2">
                 <button
                   onClick={submitSurvey}
-                  disabled={!participantName.trim() || !participantAge.trim() || !coffeeName.trim() || selectedFlavors.length === 0 || isSubmitting}
+                  disabled={!participantName.trim() || !participantAge.trim() || !coffeeName.trim() || (selectedFlavors.length === 0 && selectedItems.length === 0) || isSubmitting}
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (

@@ -192,17 +192,17 @@ export default function CoffeeFlavorWheel() {
       ]);
 
     const arc = d3.arc<d3.HierarchyRectangularNode<HierarchyNode>>()
-      .startAngle(d => d.x0)
-      .endAngle(d => d.x1)
-      .innerRadius(d => d.y0)
-      .outerRadius(d => d.y1);
+      .startAngle((d: d3.HierarchyRectangularNode<HierarchyNode>) => d.x0)
+      .endAngle((d: d3.HierarchyRectangularNode<HierarchyNode>) => d.x1)
+      .innerRadius((d: d3.HierarchyRectangularNode<HierarchyNode>) => d.y0)
+      .outerRadius((d: d3.HierarchyRectangularNode<HierarchyNode>) => d.y1);
 
     // パスを描画
     g.selectAll("path")
       .data(root.descendants().filter(d => d.depth > 0))
       .enter()
       .append("path")
-      .attr("d", arc)
+      .attr("d", (d: d3.HierarchyRectangularNode<HierarchyNode>) => arc(d))
       .style("fill", (d: D3HierarchyNode) => {
         if (d.depth === 1) {
           return colorScale(d.data.name);
@@ -272,9 +272,16 @@ export default function CoffeeFlavorWheel() {
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
       .style("font-size", (d: D3HierarchyNode) => {
-        if (d.depth === 1) return "18px";        // カテゴリ（大きく）
-        if (d.depth === 2) return "16px";        // サブカテゴリ（中程度）  
-        return "14px";                           // フレーバー（読みやすく）
+        // 円のサイズに応じてフォントサイズを調整
+        const baseSize = Math.max(8, Math.min(20, radius / 15)); // 最小8px、最大20px
+        
+        if (d.depth === 1) {
+          return Math.max(10, Math.min(18, baseSize * 1.3)) + "px";  // カテゴリ
+        } else if (d.depth === 2) {
+          return Math.max(9, Math.min(16, baseSize * 1.1)) + "px";   // サブカテゴリ
+        } else {
+          return Math.max(8, Math.min(14, baseSize)) + "px";          // フレーバー
+        }
       })
       .style("font-weight", (d: D3HierarchyNode) => d.depth === 1 ? "bold" : "600")
       .style("fill", (d: D3HierarchyNode) => {
@@ -291,21 +298,24 @@ export default function CoffeeFlavorWheel() {
       .style("opacity", (d: D3HierarchyNode) => {
         // 角度の幅が小さすぎる場合はテキストを非表示
         const angleWidth = d.x1 - d.x0;
-        if (d.depth === 1 && angleWidth < 0.2) return 0;   // カテゴリが狭すぎる場合
-        if (d.depth === 2 && angleWidth < 0.08) return 0;  // サブカテゴリが狭すぎる場合  
-        if (d.depth === 3 && angleWidth < 0.03) return 0;  // フレーバーが狭すぎる場合
+        const sizeFactor = Math.max(0.5, Math.min(1.5, radius / 200)); // 円のサイズに応じて閾値を調整
+        
+        if (d.depth === 1 && angleWidth < 0.2 * sizeFactor) return 0;   // カテゴリが狭すぎる場合
+        if (d.depth === 2 && angleWidth < 0.08 * sizeFactor) return 0;  // サブカテゴリが狭すぎる場合  
+        if (d.depth === 3 && angleWidth < 0.03 * sizeFactor) return 0;  // フレーバーが狭すぎる場合
         return 1;
       })
       .text((d: D3HierarchyNode) => {
         const angleWidth = d.x1 - d.x0;
+        const sizeFactor = Math.max(0.5, Math.min(1.5, radius / 200)); // 円のサイズに応じて調整
         let maxLength;
         
         if (d.depth === 1) {
-          maxLength = angleWidth > 0.4 ? 30 : 20;   // カテゴリ
+          maxLength = angleWidth > 0.4 ? Math.floor(30 * sizeFactor) : Math.floor(20 * sizeFactor);   // カテゴリ
         } else if (d.depth === 2) {
-          maxLength = angleWidth > 0.2 ? 25 : 15;   // サブカテゴリ
+          maxLength = angleWidth > 0.2 ? Math.floor(25 * sizeFactor) : Math.floor(15 * sizeFactor);   // サブカテゴリ
         } else {
-          maxLength = angleWidth > 0.08 ? 20 : 12;   // フレーバー
+          maxLength = angleWidth > 0.08 ? Math.floor(20 * sizeFactor) : Math.floor(12 * sizeFactor);   // フレーバー
         }
         
         // 日本語の場合は文字数ではなく、実際の表示幅を考慮
@@ -330,10 +340,13 @@ export default function CoffeeFlavorWheel() {
       });
 
     // 中央にタイトル
+    const titleSize = Math.max(12, Math.min(18, radius / 20));
+    const subtitleSize = Math.max(10, Math.min(14, radius / 25));
+    
     g.append("text")
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
-      .style("font-size", "18px")
+      .style("font-size", titleSize + "px")
       .style("font-weight", "bold")
       .style("fill", "#374151")
       .text("COFFEE");
@@ -342,7 +355,7 @@ export default function CoffeeFlavorWheel() {
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
       .attr("dy", "1.2em")
-      .style("font-size", "14px")
+      .style("font-size", subtitleSize + "px")
       .style("fill", "#6b7280")
       .text("FLAVORS");
 
